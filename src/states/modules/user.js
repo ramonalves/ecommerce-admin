@@ -1,0 +1,59 @@
+let qs = require('qs')
+
+export default {
+  state: {
+    me: null,
+    token: window.localStorage.getItem('token')
+  },
+  mutations: {
+    updateUser (state, data) {
+      state.me = data
+    },
+    updateToken (state, data) {
+      state.token = data
+    },
+    logoutUser (state) {
+      state.me = null
+    }
+  },
+  actions: {
+    getCurrentUser (context) {
+      return window.axios.get('/oauth/me').then((response) => {
+        context.commit('updateUser', response.data)
+        return response
+      })
+    },
+    authentication (context, user) {
+      return window.axios.post('/oauth/token', qs.stringify(user)).then((response) => {
+        context.commit('updateToken', response.data.token)
+        window.localStorage.setItem('token', response.data.token)
+        return response
+      })
+    },
+    register (context, user) {
+      return window.axios.post('/oauth/register', qs.stringify(user)).then((response) => {
+        let authData = {
+          username: user.email,
+          password: user.password
+        }
+        return context.dispatch('authentication', authData)
+      })
+    },
+    updateUser (context, data) {
+      let dataUpdate = {
+        email: data.email,
+        name: data.name,
+        password: data.password
+      }
+      return window.axios.put('/oauth/profile-update/' + data._id, qs.stringify(dataUpdate)).then((response) => {
+        return response
+      }).catch(e => {
+        return e
+      })
+    },
+    logout (context) {
+      window.localStorage.removeItem('token')
+      context.commit('logoutUser')
+    }
+  }
+}
